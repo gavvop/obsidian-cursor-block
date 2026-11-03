@@ -1,5 +1,5 @@
-/* Nasconde il cursore a linea: Obsidian lo disegna in .cm-cursorLayer,
-   in più nascondiamo anche il caret nativo del browser */
+/* Hide the line cursor: Obsidian draws it in .cm-cursorLayer,
+   and we also hide the browser's native caret */
 .cm-editor.cursor-block-enabled > .cm-scroller > .cm-cursorLayer {
   display: none !important;
 }
@@ -8,10 +8,10 @@
   caret-color: transparent !important;
 }
 
-/* Il blocco */
+/* The block */
 .cm-block-cursor-layer {
   pointer-events: none;
-  /* Sul layer e non sul blocco: il layer crea un proprio contesto di sovrapposizione */
+  /* On the layer, not the block: the layer creates its own stacking context */
   mix-blend-mode: var(--cursor-block-blend, normal);
 }
 
@@ -20,7 +20,7 @@
   opacity: var(--cursor-block-opacity, 0.6);
 }
 
-/* Il lampeggio è sul layer, così non interferisce con l'opacità del blocco */
+/* Blink is on the layer so it doesn't interfere with the block's opacity */
 .cm-editor.cm-focused .cm-block-cursor-layer {
   animation: cursor-block-blink-a var(--cursor-block-blink-duration, 1.2s) steps(1) infinite;
 }
@@ -33,12 +33,12 @@ body.cursor-block-no-blink .cm-editor .cm-block-cursor-layer {
   animation: none;
 }
 
-/* Nascondi il blocco quando l'editor non ha il focus */
+/* Hide the block when the editor is not focused */
 .cm-editor:not(.cm-focused) .cm-block-cursor {
   display: none;
 }
 
-/* Due copie identiche: vedi restartBlink in main.ts */
+/* Two identical copies: see restartBlink in main.ts */
 @keyframes cursor-block-blink-a {
   50% { opacity: 0; }
 }

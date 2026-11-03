@@ -2,7 +2,7 @@ import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
 import { EditorSelection } from "@codemirror/state";
 import { EditorView, RectangleMarker, ViewPlugin, ViewUpdate, layer } from "@codemirror/view";
 
-// Disegna un blocco sopra il carattere che segue ogni cursore.
+// Draws a block over the character after each cursor.
 const blockCursorLayer = layer({
   above: true,
   class: "cm-block-cursor-layer",
@@ -13,7 +13,7 @@ const blockCursorLayer = layer({
       const head = range.head;
       const line = view.state.doc.lineAt(head);
       if (head < line.to) {
-        // Blocco largo quanto il carattere sotto il cursore
+        // Block as wide as the character under the cursor
         markers.push(
           ...RectangleMarker.forRange(
             view,
@@ -22,7 +22,7 @@ const blockCursorLayer = layer({
           )
         );
       } else {
-        // Fine riga: blocco con larghezza di default
+        // End of line: block with the default character width
         const coords = view.coordsAtPos(head);
         if (!coords) continue;
         const base = view.scrollDOM.getBoundingClientRect();
@@ -64,9 +64,9 @@ const DEFAULT_SETTINGS: CursorBlockSettings = {
   blinkSpeed: 1.2,
 };
 
-// Riavvia il lampeggio a ogni modifica o spostamento del cursore, così il blocco
-// resta visibile mentre si scrive (come fa il cursore di CodeMirror).
-// Alterna due animazioni identiche: cambiare nome fa ripartire l'animazione da capo.
+// Restarts the blink on every edit or cursor move, so the block stays visible
+// while typing (like CodeMirror's own cursor does).
+// Toggles between two identical animations: changing the name restarts it.
 const restartBlink = ViewPlugin.fromClass(
   class {
     phase = false;
@@ -111,7 +111,7 @@ export default class CursorBlockPlugin extends Plugin {
     this.applyStyles();
   }
 
-  // Le impostazioni vengono passate al CSS tramite variabili sul body
+  // Settings are passed to the CSS through variables on the body
   applyStyles() {
     const s = this.settings;
     const style = document.body.style;
@@ -137,8 +137,8 @@ class CursorBlockSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     new Setting(containerEl)
-      .setName("Usa il colore accento")
-      .setDesc("Usa il colore accento del tema invece di un colore personalizzato.")
+      .setName("Use accent color")
+      .setDesc("Use the theme's accent color instead of a custom color.")
       .addToggle((t) =>
         t.setValue(settings.useAccentColor).onChange(async (v) => {
           settings.useAccentColor = v;
@@ -149,7 +149,7 @@ class CursorBlockSettingTab extends PluginSettingTab {
 
     if (!settings.useAccentColor) {
       new Setting(containerEl)
-        .setName("Colore del cursore")
+        .setName("Cursor color")
         .addColorPicker((c) =>
           c.setValue(settings.color).onChange(async (v) => {
             settings.color = v;
@@ -159,8 +159,8 @@ class CursorBlockSettingTab extends PluginSettingTab {
     }
 
     new Setting(containerEl)
-      .setName("Inverti il testo sotto il cursore")
-      .setDesc("Blocco pieno con il carattere sotto in colore invertito (ignora l'opacità).")
+      .setName("Invert text under cursor")
+      .setDesc("Solid block with the character underneath shown in inverted color (ignores opacity).")
       .addToggle((t) =>
         t.setValue(settings.invertText).onChange(async (v) => {
           settings.invertText = v;
@@ -171,7 +171,7 @@ class CursorBlockSettingTab extends PluginSettingTab {
 
     if (!settings.invertText) {
       new Setting(containerEl)
-        .setName("Opacità")
+        .setName("Opacity")
         .addSlider((sl) =>
           sl
             .setLimits(0.1, 1, 0.05)
@@ -185,7 +185,7 @@ class CursorBlockSettingTab extends PluginSettingTab {
     }
 
     new Setting(containerEl)
-      .setName("Lampeggio")
+      .setName("Blink")
       .addToggle((t) =>
         t.setValue(settings.blink).onChange(async (v) => {
           settings.blink = v;
@@ -196,8 +196,8 @@ class CursorBlockSettingTab extends PluginSettingTab {
 
     if (settings.blink) {
       new Setting(containerEl)
-        .setName("Durata del lampeggio (secondi)")
-        .setDesc("Più è basso, più il cursore lampeggia velocemente.")
+        .setName("Blink duration (seconds)")
+        .setDesc("Lower values make the cursor blink faster.")
         .addSlider((sl) =>
           sl
             .setLimits(0.4, 3, 0.1)
