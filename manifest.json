@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "minAppVersion": "1.4.0",
   "description": "Display the editor cursor as a block, with configurable color, opacity and blinking.",
-  "author": "Paolo Carnino",
+  "author": "gavvop",
   "authorUrl": "https://github.com/gavvop",
   "isDesktopOnly": false
 }
