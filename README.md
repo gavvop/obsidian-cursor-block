@@ -2,6 +2,8 @@
 
 An [Obsidian](https://obsidian.md) plugin that displays the editor cursor as a block instead of a thin line.
 
+A minimal, single-purpose block cursor.
+
 ## Features
 
 - Block cursor as wide as the character under it
