@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { App, Plugin, PluginSettingTab, SettingDefinitionItem } from "obsidian";
 import { EditorSelection } from "@codemirror/state";
 import { EditorView, RectangleMarker, ViewPlugin, ViewUpdate, layer } from "@codemirror/view";
 
@@ -103,12 +103,8 @@ export default class CursorBlockPlugin extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-  }
-
-  async saveSettings() {
-    await this.saveData(this.settings);
-    this.applyStyles();
+    const data = (await this.loadData()) as Partial<CursorBlockSettings> | null;
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
   }
 
   // Settings are passed to the CSS through variables on the body
@@ -131,83 +127,63 @@ class CursorBlockSettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  display(): void {
-    const { containerEl } = this;
+  getSettingDefinitions(): SettingDefinitionItem<keyof CursorBlockSettings>[] {
     const settings = this.plugin.settings;
-    containerEl.empty();
+    return [
+      {
+        name: "Use accent color",
+        desc: "Use the theme's accent color instead of a custom color.",
+        control: { type: "toggle", key: "useAccentColor", defaultValue: DEFAULT_SETTINGS.useAccentColor },
+      },
+      {
+        name: "Cursor color",
+        visible: () => !settings.useAccentColor,
+        control: { type: "color", key: "color", defaultValue: DEFAULT_SETTINGS.color },
+      },
+      {
+        name: "Invert text under cursor",
+        desc: "Solid block with the character underneath shown in inverted color (ignores opacity).",
+        control: { type: "toggle", key: "invertText", defaultValue: DEFAULT_SETTINGS.invertText },
+      },
+      {
+        name: "Opacity",
+        visible: () => !settings.invertText,
+        control: {
+          type: "slider",
+          key: "opacity",
+          min: 0.1,
+          max: 1,
+          step: 0.05,
+          defaultValue: DEFAULT_SETTINGS.opacity,
+          displayFormat: (v) => `${Math.round(v * 100)}%`,
+        },
+      },
+      {
+        name: "Blink",
+        control: { type: "toggle", key: "blink", defaultValue: DEFAULT_SETTINGS.blink },
+      },
+      {
+        name: "Blink duration",
+        desc: "Lower values make the cursor blink faster.",
+        visible: () => settings.blink,
+        control: {
+          type: "slider",
+          key: "blinkSpeed",
+          min: 0.4,
+          max: 3,
+          step: 0.1,
+          defaultValue: DEFAULT_SETTINGS.blinkSpeed,
+          displayFormat: (v) => `${v.toFixed(1)}s`,
+        },
+      },
+    ];
+  }
 
-    new Setting(containerEl)
-      .setName("Use accent color")
-      .setDesc("Use the theme's accent color instead of a custom color.")
-      .addToggle((t) =>
-        t.setValue(settings.useAccentColor).onChange(async (v) => {
-          settings.useAccentColor = v;
-          await this.plugin.saveSettings();
-          this.display();
-        })
-      );
-
-    if (!settings.useAccentColor) {
-      new Setting(containerEl)
-        .setName("Cursor color")
-        .addColorPicker((c) =>
-          c.setValue(settings.color).onChange(async (v) => {
-            settings.color = v;
-            await this.plugin.saveSettings();
-          })
-        );
-    }
-
-    new Setting(containerEl)
-      .setName("Invert text under cursor")
-      .setDesc("Solid block with the character underneath shown in inverted color (ignores opacity).")
-      .addToggle((t) =>
-        t.setValue(settings.invertText).onChange(async (v) => {
-          settings.invertText = v;
-          await this.plugin.saveSettings();
-          this.display();
-        })
-      );
-
-    if (!settings.invertText) {
-      new Setting(containerEl)
-        .setName("Opacity")
-        .addSlider((sl) =>
-          sl
-            .setLimits(0.1, 1, 0.05)
-            .setValue(settings.opacity)
-            .setDynamicTooltip()
-            .onChange(async (v) => {
-              settings.opacity = v;
-              await this.plugin.saveSettings();
-            })
-        );
-    }
-
-    new Setting(containerEl)
-      .setName("Blink")
-      .addToggle((t) =>
-        t.setValue(settings.blink).onChange(async (v) => {
-          settings.blink = v;
-          await this.plugin.saveSettings();
-          this.display();
-        })
-      );
-
-    if (settings.blink) {
-      new Setting(containerEl)
-        .setName("Blink duration (seconds)")
-        .setDesc("Lower values make the cursor blink faster.")
-        .addSlider((sl) =>
-          sl
-            .setLimits(0.4, 3, 0.1)
-            .setValue(settings.blinkSpeed)
-            .setDynamicTooltip()
-            .onChange(async (v) => {
-              settings.blinkSpeed = v;
-              await this.plugin.saveSettings();
-            })
-        );
-    }
+  // Saves through the default implementation, then applies the new look and
+  // shows or hides the settings that depend on the toggles
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    await super.setControlValue(key, value);
+    this.plugin.applyStyles();
+    this.refreshDomState();
   }
 }

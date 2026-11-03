@@ -1,11 +1,11 @@
-/* Hide the line cursor: Obsidian draws it in .cm-cursorLayer,
-   and we also hide the browser's native caret */
-.cm-editor.cursor-block-enabled > .cm-scroller > .cm-cursorLayer {
-  display: none !important;
+/* Hide the line cursor: Obsidian draws it in .cm-cursorLayer using
+   --caret-color, which also colors the browser's native caret */
+.cm-editor.cursor-block-enabled {
+  --caret-color: transparent;
 }
 
-.cm-editor.cursor-block-enabled .cm-content {
-  caret-color: transparent !important;
+.cm-editor.cursor-block-enabled > .cm-scroller > .cm-layer.cm-cursorLayer {
+  display: none;
 }
 
 /* The block */
