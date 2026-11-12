@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+<div id="fixtures"></div>
+<pre id="results"></pre>
+<script>
+// Mirrors the DOM CodeMirror builds: layers are children of .cm-scroller,
+// and a Live Preview table cell is a whole editor nested inside a line.
+function editor(focused, phaseB, inner) {
+  const ed = document.createElement("div");
+  ed.className = "cm-editor cursor-block-enabled" + (focused ? " cm-focused" : "") + (phaseB ? " cursor-block-phase-b" : "");
+  ed.innerHTML =
+    '<div class="cm-scroller">' +
+    '<div class="cm-layer cm-block-cursor-layer"><div class="cm-block-cursor"></div></div>' +
+    '<div class="cm-layer cm-cursorLayer"><div class="cm-cursor"></div></div>' +
+    '<div class="cm-content"><div class="cm-line"><table><tr><td class="cell"></td></tr></table></div></div>' +
+    "</div>";
+  if (inner) ed.querySelector(".cell").appendChild(inner);
+  return ed;
+}
+
+function state(ed) {
+  const scroller = ed.querySelector(":scope > .cm-scroller");
+  const layer = scroller.querySelector(":scope > .cm-block-cursor-layer");
+  const block = layer.querySelector(":scope > .cm-block-cursor");
+  return {
+    blockVisible: getComputedStyle(block).display !== "none",
+    blink: getComputedStyle(layer).animationName,
+    lineCursorHidden: getComputedStyle(scroller.querySelector(":scope > .cm-cursorLayer")).display === "none",
+  };
+}
+
+const results = [];
+function check(name, actual, expected) {
+  results.push({ name, pass: actual === expected, actual, expected });
+}
+
+function scenario(label, { outerFocused, innerFocused, outerPhaseB = false, innerPhaseB = false, noBlink = false }) {
+  const fixtures = document.getElementById("fixtures");
+  fixtures.innerHTML = "";
+  document.body.classList.toggle("cursor-block-no-blink", noBlink);
+  const inner = editor(innerFocused, innerPhaseB);
+  const outer = editor(outerFocused, outerPhaseB, inner);
+  fixtures.appendChild(outer);
+  return { label, outer: state(outer), inner: state(inner) };
+}
+
+// Plain editor, no nesting
+{
+  const fixtures = document.getElementById("fixtures");
+  fixtures.innerHTML = "";
+  const ed = editor(true, false);
+  fixtures.appendChild(ed);
+  let s = state(ed);
+  check("single focused editor: block visible", s.blockVisible, true);
+  check("single focused editor: blinks", s.blink, "cursor-block-blink-a");
+  check("single focused editor: line cursor hidden", s.lineCursorHidden, true);
+  ed.classList.remove("cm-focused");
+  s = state(ed);
+  check("single unfocused editor: block hidden", s.blockVisible, false);
+  check("single unfocused editor: no blink", s.blink, "none");
+}
+
+// Issue #1: typing in a table cell (cell focused, main editor not)
+{
+  const s = scenario("cell", { outerFocused: false, innerFocused: true });
+  check("typing in cell: cell block visible", s.inner.blockVisible, true);
+  check("typing in cell: cell blinks", s.inner.blink, "cursor-block-blink-a");
+  check("typing in cell: cell line cursor hidden", s.inner.lineCursorHidden, true);
+  check("typing in cell: main block hidden", s.outer.blockVisible, false);
+  check("typing in cell: main does not blink", s.outer.blink, "none");
+}
+
+// Typing in the main editor, outside the table
+{
+  const s = scenario("main", { outerFocused: true, innerFocused: false });
+  check("typing in main: main block visible", s.outer.blockVisible, true);
+  check("typing in main: main blinks", s.outer.blink, "cursor-block-blink-a");
+  check("typing in main: cell block hidden", s.inner.blockVisible, false);
+  check("typing in main: cell does not blink", s.inner.blink, "none");
+}
+
+// Blink restart phase must apply only to its own editor
+{
+  let s = scenario("phase", { outerFocused: false, innerFocused: true, innerPhaseB: true });
+  check("cell in phase b: cell uses blink b", s.inner.blink, "cursor-block-blink-b");
+  s = scenario("phase", { outerFocused: true, innerFocused: false, outerPhaseB: true });
+  check("main in phase b: main uses blink b", s.outer.blink, "cursor-block-blink-b");
+  check("main in phase b: cell does not blink", s.inner.blink, "none");
+}
+
+// Blink disabled in settings
+{
+  const s = scenario("noblink", { outerFocused: false, innerFocused: true, noBlink: true });
+  check("blink off: cell block visible", s.inner.blockVisible, true);
+  check("blink off: cell does not blink", s.inner.blink, "none");
+  document.body.classList.remove("cursor-block-no-blink");
+}
+
+document.getElementById("fixtures").innerHTML = "";
+document.getElementById("results").textContent = JSON.stringify(results);
+</script>
+</body>
+</html>
